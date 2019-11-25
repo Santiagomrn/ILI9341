@@ -36,30 +36,30 @@ void delay(uint32_t tiempo){
 }
 
 void write_parameter(uint8_t param){
-	GPIO_PORTA_DATA_R |= RS;
-	GPIO_PORTA_DATA_R &= ~CS;
-	GPIO_PORTD_DATA_R = param;
-	GPIO_PORTA_DATA_R |= CS;
+	GPIO_PORTD_DATA_R |= RS;
+	GPIO_PORTD_DATA_R &= ~CS;
+	GPIO_PORTA_DATA_R = param;
+	GPIO_PORTD_DATA_R |= CS;
 }
 
 void send_cmd(uint8_t cmd){
-	GPIO_PORTA_DATA_R &= ~RS;
-	GPIO_PORTA_DATA_R &= ~CS;
+	GPIO_PORTD_DATA_R &= ~RS;
+	GPIO_PORTD_DATA_R &= ~CS;
 	
-	GPIO_PORTD_DATA_R = cmd;
+	GPIO_PORTA_DATA_R = cmd;
 	
-	GPIO_PORTA_DATA_R |= CS;
+	GPIO_PORTD_DATA_R |= CS;
 }
 
 void init(void){
 	init_portD();
 	init_portA();
 	//Se genera un flanco de subida
-	GPIO_PORTA_DATA_R |= RST; //Se pone en uno 
+	GPIO_PORTD_DATA_R |= RST; //Se pone en uno 
 	delay(1000);
-	GPIO_PORTA_DATA_R &= ~RST; //Se baja
+	GPIO_PORTD_DATA_R &= ~RST; //Se baja
 	delay(10000);
-	GPIO_PORTA_DATA_R |= RST; //Se vuelve a subir 
+	GPIO_PORTD_DATA_R |= RST; //Se vuelve a subir 
 	delay(120000);
 	
 	send_cmd(0x01); //Se envia el comando de Software Reset
@@ -189,23 +189,24 @@ void Columna_del_Cuadro(uint16_t Inicio, uint16_t  Final){
 }
 
 void Fondo_de_Pantalla(void){
-Columna_del_Cuadro(0,0xEF);													// Limitamos el Cuadro en columnas
-Direccion_de_la_Pagina(0,0x13F);										// Limitamos el pagina
-Escribiendo_comandos(0x2C);													// Habilitamos escribir en memoria. Realiza la transferencia de datos de MCU a la trama de memoria.
+Columna_del_Cuadro(0,239);													// Limitamos el Cuadro en columnas
+Direccion_de_la_Pagina(0,319);										// Limitamos el pagina
+send_cmd(0x2C);													// Habilitamos escribir en memoria. Realiza la transferencia de datos de MCU a la trama de memoria.
 	
-GPIO_PORTD_DATA_R |= 0x04;													// [Reset=0 CSX=0 D/CX=1 WRX=0 RDX=0]
+GPIO_PORTD_DATA_R |= RS;													// [Reset=0 CSX=0 D/CX=1 WRX=0 RDX=0]
 delay(0x3E80);                       							// Realizamos un retraso de 1us 
-GPIO_PORTA_DATA_R &= ~0x08;											  	// [Reset=1 CSX=0 D/CX=1 WRX=1 RDX=1]
+GPIO_PORTD_DATA_R &= ~0x08;											  	// [Reset=1 CSX=0 D/CX=1 WRX=1 RDX=1]
 	
 	for(int i=0; i<38400; i++){												// Realizamos recorrido de toda la pantalla
-		Escribiendo_datos(0x00);												// Determinamos color de 1/4 de pantalla
-		Escribiendo_datos(0x00);												// Determinamos color de 1/4 de pantalla
-		Escribiendo_datos(0x00);												// Determinamos color de 1/4 de pantalla
-		Escribiendo_datos(0x00);												// Determinamos color de 1/4 de pantalla
+	  write_parameter(0x00);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0xAA);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0xAA);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0x00);												// Determinamos color de 1/4 de pantalla
 	}	
 GPIO_PORTD_DATA_R |= 0x08;								  			  // [Reset=0 CSX=1 D/CX=0 WRX=0 RDX=0]	
 }
 
 int main(void){
-	
+	init();
+	Fondo_de_Pantalla();
 }
