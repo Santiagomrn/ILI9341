@@ -38,35 +38,38 @@ void delay(uint32_t tiempo){
 void write_parameter(uint8_t param){
 	GPIO_PORTD_DATA_R |= RS;
 	GPIO_PORTD_DATA_R |= RD;
-	GPIO_PORTD_DATA_R &= ~WR;
+	GPIO_PORTD_DATA_R &= ~CS;
 	GPIO_PORTA_DATA_R = param;
-	GPIO_PORTD_DATA_R |= WR;
+	GPIO_PORTD_DATA_R |= CS;
 }
 
 void send_cmd(uint8_t cmd){
 	GPIO_PORTD_DATA_R &= ~RS;
 	GPIO_PORTD_DATA_R |= RD;
-	GPIO_PORTD_DATA_R &= ~WR;
+	GPIO_PORTD_DATA_R &= ~CS;
 	GPIO_PORTA_DATA_R = cmd;
-	GPIO_PORTD_DATA_R |= WR;
+	GPIO_PORTD_DATA_R |= CS;
 }
 
 void init(void){
 	init_portD();
 	init_portA();
+	
 	//Se genera un flanco de subida
+
+	GPIO_PORTD_DATA_R = RST; //Se pone en uno 
+		delay(16000000/190);
+	GPIO_PORTD_DATA_R =~RST; //Se pone en cero 
+		delay(16000000/20);
+		GPIO_PORTD_DATA_R =RST; //Se pone en uno 
+		delay(16000000/20);
+	
 	GPIO_PORTD_DATA_R |= CS;
 	GPIO_PORTD_DATA_R |= RS;
 	GPIO_PORTD_DATA_R |= RD;
-	GPIO_PORTD_DATA_R |= RST; //Se pone en uno 
-	
 	send_cmd(0x01); //Se envia el comando de Software Reset
 	delay(16000000/190); //Se espera un tiempo 
-	
-	send_cmd(0x29);// Display ON
-	send_cmd(0x28);// Se apaga la pantalla con Display OFF
-	
-	send_cmd(0x21); //Display Inversion ON
+	send_cmd(0x10);//modo sleep
 	
 	send_cmd(0xc0); //Se realiza un Power Control 1
 	write_parameter(0x26);//Se configura a 4.75  volts 
@@ -79,10 +82,15 @@ void init(void){
 	write_parameter(0x4c);	//Minimo voltaje -.6 volts
 	
 	send_cmd(0xC7); //VCOM Control 2
-	write_parameter(0x94);
+	write_parameter(0xC0);
 	
 	send_cmd(0x36); //Memory Access Control
 	write_parameter(0x48);	//Se define como se enviar�n los datos 
+	
+	send_cmd(0xB6);//Display Function Control
+	write_parameter(0x08);	//Establece modo escanaeo en el modo de no visualizaci�n 
+	write_parameter(0x82);	//Se configura los modos en los que se recibira el dato y el despliegue
+	write_parameter(0x27);	//Selecciona la direcci�n de desplazamiento de las salidas desde el controlador de origen.
 	
 	send_cmd(0x3A);// Pixel Format Set
 	write_parameter(0x55);	//Se define el formato de 16 bits 
@@ -139,12 +147,11 @@ void init(void){
 	write_parameter(0x36);
 	write_parameter(0x0F);
 	
-	delay(2*16000000);
-	
-	
-
+	send_cmd(0x11);//Exit sleep
+	delay(16000000/20);
 	send_cmd(0x29); //Display ON
-	send_cmd(0x21); //Display Inversion ON
+	//send_cmd(0x21);
+	
 
 }
 
@@ -171,16 +178,17 @@ Columna_del_Cuadro(0,239);													// Limitamos el Cuadro en columnas
 Direccion_de_la_Pagina(0,319);										// Limitamos el pagina
 send_cmd(0x2C);													// Habilitamos escribir en memoria. Realiza la transferencia de datos de MCU a la trama de memoria.
 	
-	for(int i=0; i<38400; i++){												// Realizamos recorrido de toda la pantalla
-	  write_parameter(0x00);												// Determinamos color de 1/4 de pantalla
-		write_parameter(0xAA);												// Determinamos color de 1/4 de pantalla
-		write_parameter(0xAA);												// Determinamos color de 1/4 de pantalla
-		write_parameter(0x00);												// Determinamos color de 1/4 de pantalla
-	}	
 
+	for(int i=0; i<38400; i++){												// Realizamos recorrido de toda la pantalla
+	  write_parameter(0xFF);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0xFF);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0xFF);												// Determinamos color de 1/4 de pantalla
+		write_parameter(0xFF);												// Determinamos color de 1/4 de pantalla
+	}	
+ 
 }
 
 int main(void){
 	init();
-	Fondo_de_Pantalla();
+	//Fondo_de_Pantalla();
 }
